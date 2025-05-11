@@ -1,1 +1,6 @@
-"fastapi\nuvicorn\npydantic\nrequests\npython-dotenv" 
+fastapi
+uvicorn
+pydantic
+requests
+python-dotenv
+
