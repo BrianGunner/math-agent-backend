@@ -60,3 +60,6 @@ def login_user(data: SignUpData):
         raise HTTPException(status_code=res.status_code, detail=res.json().get("msg", "Login failed"))
 
     return res.json()
+@app.get("/")
+def read_root():
+    return {"message": "Math Agent Backend is running!"}
