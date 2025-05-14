@@ -90,9 +90,11 @@ def start_practice(data: PracticeStart):
         "?select=id,prompt,option_a,option_b,option_c,option_d,correct,difficulty"
         "&order=random()&limit=1"
     )
+    print("Supabase headers being used:", ANON_HEADERS)
+
     res = requests.get(url, headers=ANON_HEADERS)
     if res.status_code != 200 or not res.json():
-        raise HTTPException(status_code=500, detail="Could not fetch question")
+        raise HTTPException(status_code=500, detail=f"Failed: {res.status_code} | {res.text}")
     question = res.json()[0]
     session_id = str(uuid4())
     return {"session_id": session_id, "question": question}
