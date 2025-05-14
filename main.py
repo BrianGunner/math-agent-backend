@@ -88,7 +88,7 @@ def start_practice(data: PracticeStart):
     url = (
         f"{SUPABASE_URL}/rest/v1/questions"
         "?select=id,prompt,option_a,option_b,option_c,option_d,correct,difficulty"
-        "&order=random()&limit=1"
+        "&limit=1"
     )
     print("🔍 Fetching question from:", url)
     print("🛡️  Using headers:", ANON_HEADERS)
@@ -137,16 +137,18 @@ def answer_practice(data: PracticeAnswer):
     url_n = (
         f"{SUPABASE_URL}/rest/v1/questions"
         f"?select=id,prompt,option_a,option_b,option_c,option_d,correct,difficulty"
-        f"&difficulty=eq.{next_diff}&order=random()&limit=1"
+        f"&difficulty=eq.{next_diff}&limit=1"
     )
     res_n = requests.get(url_n, headers=ANON_HEADERS)
+
     if not res_n.json():
         url_f = (
             f"{SUPABASE_URL}/rest/v1/questions"
             "?select=id,prompt,option_a,option_b,option_c,option_d,correct,difficulty"
-            "&order=random()&limit=1"
+            "&limit=1"
         )
         res_n = requests.get(url_f, headers=ANON_HEADERS)
+
     next_q = res_n.json()[0] if res_n.json() else None
 
     return {
