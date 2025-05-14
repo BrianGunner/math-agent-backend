@@ -6,15 +6,11 @@ from fastapi import FastAPI, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, EmailStr
 
-# If you use a local .env for dev, uncomment the next two lines:
-# from dotenv import load_dotenv
-# load_dotenv()
-
-# Environment (set these on Render or in your .env)
-SUPABASE_URL         = os.getenv("SUPABASE_URL", "https://oiymijqkfjxuwxxdofmq.supabase.co")
-SUPABASE_ANON_KEY    = os.getenv("SUPABASE_ANON_KEY", "<your-anon-key>")
-SUPABASE_SERVICE_KEY = os.getenv("SUPABASE_SERVICE_KEY", "<your-service-role-key>")
-REDIRECT_URL         = os.getenv("REDIRECT_URL", "http://localhost:5173")
+# Environment (filled directly for deployment)
+SUPABASE_URL = "https://oiymijqkfjxuwxxdofmq.supabase.co"
+SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Im9peW1panFrZmp4dXd4eGRvZm1xIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NDY4MDEwNzksImV4cCI6MjA2MjM3NzA3OX0.SESgl6jpKX5SW2k9oHTf0TH1H7m5fGY9L8SEb86TUV0"
+SUPABASE_SERVICE_KEY = SUPABASE_ANON_KEY
+REDIRECT_URL = "http://localhost:5173"
 
 # Headers for Supabase REST
 ANON_HEADERS = {
@@ -58,12 +54,12 @@ class PracticeAnswer(BaseModel):
     answer: str
     time_taken: Optional[int] = None
 
-# Health check at root
+# Health check
 @app.get("/")
 def read_root():
     return {"message": "Math Agent Backend is running!"}
 
-# Sign-up via Supabase Auth
+# Signup route
 @app.post("/signup")
 def signup_user(data: SignUpData):
     domain = data.email.split("@")[1]
@@ -76,7 +72,7 @@ def signup_user(data: SignUpData):
         raise HTTPException(status_code=res.status_code, detail=res.json().get("msg", "Signup failed"))
     return {"message": "Signup successful. Please check your email to verify."}
 
-# Login via Supabase Auth
+# Login route
 @app.post("/login")
 def login_user(data: LoginData):
     payload = {"email": data.email, "password": data.password}
@@ -86,7 +82,7 @@ def login_user(data: LoginData):
         raise HTTPException(status_code=res.status_code, detail=res.json().get("msg", "Login failed"))
     return res.json()
 
-# Practice quiz: start a session and get one random question
+# Practice start route
 @app.post("/quiz/practice/start")
 def start_practice(data: PracticeStart):
     url = (
@@ -101,10 +97,9 @@ def start_practice(data: PracticeStart):
     session_id = str(uuid4())
     return {"session_id": session_id, "question": question}
 
-# Practice quiz: record an answer, adjust difficulty, return next question
+# Practice answer route
 @app.post("/quiz/practice/answer")
 def answer_practice(data: PracticeAnswer):
-    # Fetch the original question to know correct answer & difficulty
     url_q = (
         f"{SUPABASE_URL}/rest/v1/questions"
         f"?select=id,correct,difficulty&id=eq.{data.question_id}"
@@ -115,7 +110,6 @@ def answer_practice(data: PracticeAnswer):
     q = res_q.json()[0]
     is_correct = data.answer == q["correct"]
 
-    # Record progress
     payload = {
         "user_id": data.user_id,
         "question_id": data.question_id,
@@ -130,11 +124,9 @@ def answer_practice(data: PracticeAnswer):
     if res_ins.status_code not in (200, 201):
         raise HTTPException(status_code=res_ins.status_code, detail="Failed to record progress")
 
-    # Compute next difficulty
     diff = q["difficulty"]
     next_diff = max(1, min(5, diff + (1 if is_correct else -1)))
 
-    # Try to fetch a question at that difficulty, fallback to any random
     url_n = (
         f"{SUPABASE_URL}/rest/v1/questions"
         f"?select=id,prompt,option_a,option_b,option_c,option_d,correct,difficulty"
